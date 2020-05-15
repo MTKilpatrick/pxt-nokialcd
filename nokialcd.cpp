@@ -10,6 +10,10 @@
 #define LCD_TEMP                        0
 #define LCD_BIAS                        3
 #define LCD_VOP                         63
+#define SCROLL_UP                       0
+#define SCROLL_RIGHT                    1
+#define SCROLL_DOWN                     2
+#define SCROLL_LEFT                     3            
 
 using namespace pxt;
     
@@ -128,45 +132,117 @@ namespace nokialcd {
     }
 
     //%
-    void scrollRow(int row, int direction, int step) {
+    void scrollRow(int row, int direction, int step = 1) {
         if ((row < 0) || (row > 5)) return;
         row *= 84;
-        int r1 = row + 83;
-        if (direction & 1) {
-            if (direction & 2) {
-                // left
+        switch (direction) {
+            case SCROLL_LEFT: {
+                int rowend = row + 84;
+                int r1 = rowend - step;
                 for (; row < r1; row++) {
-                    bytearray->data[row] = bytearray->data[row + 1];
+                    bytearray->data[row] = bytearray->data[row + step];
                 }
-                bytearray->data[row] = 0;
-            } else {
-                // right
-                for (; r1 > row; r1--) {
-                    bytearray->data[r1] = bytearray->data[r1 - 1];
+                for (; row < rowend; row++) {
+                    bytearray->data[row] = 0;
                 }
-                bytearray->data[row] = 0;
+                break; 
+            }
+            case SCROLL_RIGHT: {
+                int r1 = row + 84 - step;
+                int rowend = row + step - 1;
+                for (; r1 > rowend; r1--) {
+                    bytearray->data[r1] = bytearray->data[r1 - step];
+                }
+                for (; r1 >= row; r1--) {
+                    bytearray->data[r1] = 0;
+                }
+                break;
+            }
+            case SCROLL_UP: {
+                int rowend = row + 84;
+                for (; row < rowend; row++) {
+                    bytearray->data[row] >>= step;
+                }
+                break;
+            }
+            case SCROLL_DOWN: {
+                int rowend = row + 84;
+                for (; row < rowend; row++) {
+                    bytearray->data[row] <<= step;
+                }
+                break;
             }
         }
     }
     
     //%
-    void scrollRowStep(int row, int direction, int step) {
-        if ((row < 0) || (row > 5)) return;
-        row *= 84;
-        int r1 = row + 83;
-        if (direction & 1) {
-            if (direction & 2) {
-                // left
-                for (; row < r1; row++) {
-                    bytearray->data[row] = bytearray->data[row + 1];
+    void scrollUpRow() {
+        int j = 84;
+        int i = 0;
+        for (; i < 420; i++, j++) {
+            bytearray->data[i] = bytearray->data[j]; 
+        }
+        for (; i < 504; i++) {
+            bytearray->data[i] = 0;
+        }       
+    }
+    
+    //%
+    void scrollDownRow() {
+        int i = 503;
+        int j = i - 84;
+        for (; i > 83; i--, j--) {
+            bytearray->data[i] = bytearray->data[j]; 
+        }
+        for (; i >= 0; i--) {
+            bytearray->data[i] = 0;
+        }       
+    }
+
+    //%
+    void scrollScreen(int direction, int step) {
+        switch (direction) {
+            case SCROLL_LEFT:
+            case SCROLL_RIGHT:
+            if (step == 0) return;
+                for (int row = 0; row < 6; row++) {
+                    scrollRow(row, direction, step);
                 }
-                bytearray->data[row] = 0;
-            } else {
-                // right
-                for (; r1 > row; r1--) {
-                    bytearray->data[r1] = bytearray->data[r1 - 1];
+                break;
+            case SCROLL_DOWN: {
+                while (step > 8) {
+                        scrollScreen(direction, 8);
+                        step -= 8;
                 }
-                bytearray->data[row] = 0;
+                if (step == 0) return;
+                int shft = 8 - step;
+                int maskd = 0xff << shft;
+                int i = 503;
+                int j = i - 84;
+                for (; i > 83; i--,j--) {
+                    bytearray->data[i] =  (bytearray->data[i] << step) | ((bytearray->data[j] & maskd) >> shft);
+                }
+                for (; i >= 0; i--) {
+                    bytearray->data[i] <<= step;
+                }
+                break;
+            }
+            case SCROLL_UP: {
+                while (step > 8) {
+                        scrollScreen(direction, 8);
+                        step -= 8;
+                }
+                if (step == 0) return;
+                int shft = 8 - step;
+                int masku = (1 << step) - 1;
+                int j = 84;
+                int i = 0;
+                for (; i < 420; i++, j++) {
+                    bytearray->data[i] =  (bytearray->data[i] >> step) | ((bytearray->data[j] & masku) << shft);
+                }
+                for (; i < 504; i++) {
+                    bytearray->data[i] >>= step;
+                }
             }
         }
     }

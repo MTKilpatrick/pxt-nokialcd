@@ -49,8 +49,8 @@ namespace nokialcd {
     //% block="init LCD display"
     //% blockId=nokialcd_init
     export function init(): void {
-        //    pins.spiFormat(8, 0)
         pins.spiFrequency(1000000)
+        pins.spiFormat(8, 0)
         SPIinit()
     }
 
@@ -96,8 +96,27 @@ namespace nokialcd {
     }
 
     //% shim=nokialcd::scrollRow
-    //% block="scroll row %row direction %direction=dir_conv step %step"
-    export function scrollRow(row: number, direction: number, step: number): void {
+    //% block="scroll screen direction %direction=dir_conv || step %step"
+    //% expandableArgumentMode="toggle"
+    //% step.min=0 step.defl=1
+    export function scrollRow(row: number, direction: number, step: number = 1): void {
+        return
+    }
+
+    //% shim=nokialcd::scrollUpRow
+    export function scrollUpRow() {
+        return
+    }
+    //% shim=nokialcd::scrollDownRow
+    export function scrollDownRow() {
+        return
+    }
+
+    //% shim=nokialcd::scrollScreen
+    //% block="scroll row %row direction %direction=dir_conv || step %step"
+    //% expandableArgumentMode="toggle"
+    //% step.min=0 step.defl=1
+    export function scrollScreen(direction: number, step: number = 1): void {
         return
     }
 
@@ -204,5 +223,4 @@ namespace nokialcd {
         return
     }
 }
-basic.showNumber(1)
 nokialcd.init()
