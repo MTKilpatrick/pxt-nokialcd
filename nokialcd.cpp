@@ -16,9 +16,18 @@
 #define SCROLL_LEFT                     3            
 
 using namespace pxt;
-    
-SPI spi(mbit_p15, mbit_p14, mbit_p13);
+
+namespace pins
+{
+    extern SPI* allocSPI();
+    extern int  spiWrite(int value);
+    extern void spiFrequency(int frequency);
+    extern void spiFormat(int bits, int mode);
+}
+using namespace pins;
+
 namespace nokialcd {
+
 
     DigitalOut LCD_CE(mbit_p12);
     DigitalOut LCD_RST(mbit_p8);
@@ -35,14 +44,14 @@ namespace nokialcd {
     //%
     void writeSPIByte(int b) {
         LCD_CE = 0;
-        spi.write(b);
+        spiWrite(b);
         LCD_CE = 1;
     }
     //%
     void writeSPIBuf() {
         LCD_CE = 0;
         for (int i = 0; i < 504; i++) {
-            spi.write(bytearray->data[i]);
+            spiWrite(bytearray->data[i]);
         }
         LCD_CE = 1;
     }
@@ -69,9 +78,7 @@ namespace nokialcd {
     }
     void writeFunctionSet(int v, int h) {
         LCD_DC = LCD_CMD;
-        LCD_CE = 0;
-        spi.write(0x20 | (v << 1) | (h & 1));
-        LCD_CE = 1;
+        writeSPIByte(0x20 | (v << 1) | (h & 1));
         LCD_DC = LCD_DAT;
     }    
     void lcdExtendedFunctions(int temp, int bias, int vop) {
@@ -88,8 +95,8 @@ namespace nokialcd {
         LCD_CE = 1;
         lcdDE = 0;
         LCD_RST = 0;
-        spi.format(8,0);
-        spi.frequency(1000000);
+        spiFormat(8,0);
+        spiFrequency(1000000);
         wait(0.5);
         LCD_RST = 1;
         writeFunctionSet(0, 1);
@@ -139,37 +146,25 @@ namespace nokialcd {
             case SCROLL_LEFT: {
                 int rowend = row + 84;
                 int r1 = rowend - step;
-                for (; row < r1; row++) {
-                    bytearray->data[row] = bytearray->data[row + step];
-                }
-                for (; row < rowend; row++) {
-                    bytearray->data[row] = 0;
-                }
+                for (; row < r1; row++)  bytearray->data[row] = bytearray->data[row + step];
+                for (; row < rowend; row++)  bytearray->data[row] = 0;
                 break; 
             }
             case SCROLL_RIGHT: {
                 int r1 = row + 84 - step;
                 int rowend = row + step - 1;
-                for (; r1 > rowend; r1--) {
-                    bytearray->data[r1] = bytearray->data[r1 - step];
-                }
-                for (; r1 >= row; r1--) {
-                    bytearray->data[r1] = 0;
-                }
+                for (; r1 > rowend; r1--)   bytearray->data[r1] = bytearray->data[r1 - step];
+                for (; r1 >= row; r1--)  bytearray->data[r1] = 0;
                 break;
             }
             case SCROLL_UP: {
                 int rowend = row + 84;
-                for (; row < rowend; row++) {
-                    bytearray->data[row] >>= step;
-                }
+                for (; row < rowend; row++) bytearray->data[row] >>= step;
                 break;
             }
             case SCROLL_DOWN: {
                 int rowend = row + 84;
-                for (; row < rowend; row++) {
-                    bytearray->data[row] <<= step;
-                }
+                for (; row < rowend; row++)  bytearray->data[row] <<= step;
                 break;
             }
         }
@@ -179,24 +174,16 @@ namespace nokialcd {
     void scrollUpRow() {
         int j = 84;
         int i = 0;
-        for (; i < 420; i++, j++) {
-            bytearray->data[i] = bytearray->data[j]; 
-        }
-        for (; i < 504; i++) {
-            bytearray->data[i] = 0;
-        }       
+        for (; i < 420; i++, j++)   bytearray->data[i] = bytearray->data[j]; 
+        for (; i < 504; i++)   bytearray->data[i] = 0;
     }
     
     //%
     void scrollDownRow() {
         int i = 503;
         int j = i - 84;
-        for (; i > 83; i--, j--) {
-            bytearray->data[i] = bytearray->data[j]; 
-        }
-        for (; i >= 0; i--) {
-            bytearray->data[i] = 0;
-        }       
+        for (; i > 83; i--, j--) bytearray->data[i] = bytearray->data[j]; 
+        for (; i >= 0; i--)  bytearray->data[i] = 0;
     }
 
     //%
@@ -205,9 +192,7 @@ namespace nokialcd {
             case SCROLL_LEFT:
             case SCROLL_RIGHT:
             if (step == 0) return;
-                for (int row = 0; row < 6; row++) {
-                    scrollRow(row, direction, step);
-                }
+                for (int row = 0; row < 6; row++)   scrollRow(row, direction, step);
                 break;
             case SCROLL_DOWN: {
                 while (step > 8) {
@@ -219,12 +204,8 @@ namespace nokialcd {
                 int maskd = 0xff << shft;
                 int i = 503;
                 int j = i - 84;
-                for (; i > 83; i--,j--) {
-                    bytearray->data[i] =  (bytearray->data[i] << step) | ((bytearray->data[j] & maskd) >> shft);
-                }
-                for (; i >= 0; i--) {
-                    bytearray->data[i] <<= step;
-                }
+                for (; i > 83; i--,j--)  bytearray->data[i] =  (bytearray->data[i] << step) | ((bytearray->data[j] & maskd) >> shft);
+                for (; i >= 0; i--)   bytearray->data[i] <<= step;
                 break;
             }
             case SCROLL_UP: {
@@ -237,12 +218,8 @@ namespace nokialcd {
                 int masku = (1 << step) - 1;
                 int j = 84;
                 int i = 0;
-                for (; i < 420; i++, j++) {
-                    bytearray->data[i] =  (bytearray->data[i] >> step) | ((bytearray->data[j] & masku) << shft);
-                }
-                for (; i < 504; i++) {
-                    bytearray->data[i] >>= step;
-                }
+                for (; i < 420; i++, j++)  bytearray->data[i] =  (bytearray->data[i] >> step) | ((bytearray->data[j] & masku) << shft);
+                for (; i < 504; i++)   bytearray->data[i] >>= step;
             }
         }
     }
@@ -355,9 +332,7 @@ namespace nokialcd {
         int y = y0;
         if (x1 < x0) { x = x1; x1 = x0; }
         if (y1 < y0) { y = y1; y1 = y0; }
-        if ((y1 | x1) < 0) {
-            return;
-        }
+        if ((y1 | x1) < 0) return;
         if (y < 0) y = 0;
         if (y1 > 47) y1 = 47;
         if (x1 > 83) x1 = 83; 
