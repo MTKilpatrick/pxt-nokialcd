@@ -31,6 +31,11 @@ enum LCDDisplayModes {
 namespace nokialcd {
 
 
+    //% shim=nokialcd::initBuffer
+    function initBuffer(): Buffer {
+        return pins.createBuffer(504)
+    }
+
     const FILL_X = hex`fffefcf8f0e0c08000`
     const FILL_B = hex`0103070f1f3f7fffff`
     const TWOS = hex`0102040810204080`
@@ -39,6 +44,32 @@ namespace nokialcd {
     let cursory = 0
 
 
+    export class Cursor {
+        private _x: number
+        private _y: number
+        private _char: number
+        private _invert: boolean
+
+        constructor() {
+            this._x = 0
+            this._y = 0
+            this._invert = false
+        }
+        public getX(): number {
+            return this._x
+        }
+        public getY(): number {
+            return this._y
+        }
+        public getChar(): number {
+            return this._char
+        }
+        public setChar(c: number) {
+            return
+        }
+
+    }
+    
     //% shim=nokialcd::writeCharToBuf
     function writeCharToBuf(char: number, x: number, y: number) {
         return
@@ -55,17 +86,12 @@ namespace nokialcd {
         cursorx += 1
     }
 
-    //% shim=nokialcd::initBuffer
-    function initBuffer(): Buffer {
-        return pins.createBuffer(504)
-    }
-
     //% shim=nokialcd::SPIinit
     function SPIinit(): void {
         return
     }
 
-    //% block="init LCD display"
+    //% block="reset LCD display"
     //% blockId=nokialcd_init
     export function init(): void {
         //        pins.spiFrequency(1000000)
@@ -78,7 +104,7 @@ namespace nokialcd {
         return
     }
 
-    //% block="show LCD display"
+    //% block="update LCD display"
     //% blocId=nokialcd_show
     export function show(): void {
         writeBufToLCD()
@@ -132,7 +158,7 @@ namespace nokialcd {
     }
 
     //% shim=nokialcd::scrollScreen
-    //% block="scroll row %row direction %direction=dir_conv || step %step"
+    //% block="scroll direction %direction=dir_conv || step %step"
     //% expandableArgumentMode="toggle"
     //% step.min=0 step.defl=1
     export function scrollScreen(direction: number, step: number = 1): void {
@@ -140,7 +166,7 @@ namespace nokialcd {
     }
 
     //% blockId=nokialcd_display_row
-    //% block="show row %row"
+    //% block="display row %row"
     export function displayRow(row: number): void {
     }
 
@@ -184,6 +210,19 @@ namespace nokialcd {
     function pLine(x0: number, y0: number, x1: number, y1: number): void {
         return
     }
+    //% shim=nokialcd::pBox
+    function pBox(x0: number, y0: number, x1: number, y1: number): void {
+        return
+    }
+    //% shim=nokialcd::vLine
+    function vLine(x: number, y0: number, y1: number): void {
+        return
+    }
+
+    //% shim=nokialcd::hLine
+    function hLine(x0: number, x1: number, y: number): void {
+        return
+    }
 
     //% blockId=nokialcd_plot
     //% block="draw %plot=plot_conv from x %x0 y %y0 to x %x1 y %y1 $state"
@@ -205,26 +244,13 @@ namespace nokialcd {
         }
     }
 
-    //% shim=nokialcd::vLine
-    function vLine(x: number, y0: number, y1: number): void {
-        return
-    }
 
-    //% shim=nokialcd::hLine
-    function hLine(x0: number, x1: number, y: number): void {
-        return
-    }
-
-    //% shim=nokialcd::pBox
-    function pBox(x0: number, y0: number, x1: number, y1: number): void {
-        return
-    }
 
     //% blockId=nokialcd_clear
     //% block="clear screen"
+    //% shim=nokialcd::clear
     export function clear(): void {
         bytearray.fill(0)
-        writeBufToLCD()
     }
 
     //% shim=nokialcd::setYAddr
