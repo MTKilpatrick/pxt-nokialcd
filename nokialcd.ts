@@ -87,7 +87,7 @@ namespace nokialcd {
     }
 
     //% shim=nokialcd::SPIinit
-    function SPIinit(): void {
+    function SPIinit(frequency: number): void {
         return
     }
 
@@ -96,7 +96,7 @@ namespace nokialcd {
     export function init(): void {
         //        pins.spiFrequency(1000000)
         //        pins.spiFormat(8, 0)
-        SPIinit()
+        SPIinit(4000000)
     }
 
     //% shim=nokialcd::writeBufToLCD

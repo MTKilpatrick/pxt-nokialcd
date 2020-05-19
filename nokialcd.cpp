@@ -185,12 +185,12 @@ namespace nokialcd {
     }
     
     //%
-    void SPIinit() {
+    void SPIinit(int frequency) {
         LCD_CE = 1;
         lcdDE = 0;
         LCD_RST = 0;
         spiFormat(8,0);
-        spiFrequency(1000000);
+        spiFrequency(frequency);
         wait(0.5);
         LCD_RST = 1;
         writeFunctionSet(0, 1);
